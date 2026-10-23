@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Skip List",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/skipList",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "C/C++: gcc build active file"
+        }
+    ]
+}
