@@ -21,13 +21,22 @@ typedef struct expressNode{
     struct node* localListNode;
 }expNode;
 
+//Skip list struct
+typedef struct skipList{
+    int levels;
+    expNode** heads;
+} skipList;
+
 
 //Function declarations:
 int* inputArr(int* len);
 void merge(int arr[], int left, int mid, int right);
 void mergeSort(int arr[], int left, int right);
 node* initializeLocalList(int* arr, int* len);
-expNode** expressLists(node* head);
+expNode** expressLists(node* head, int* levels);
+void search(expNode** expLists, int levels, int n);
+void insert(expNode** expLists, int n);
+void delete(expNode** expLists, int n);
 int coinFlip();
 
 int main(){
@@ -50,7 +59,10 @@ int main(){
     head = temp;
 
     //Create express lists
-    expNode** setOfExpressLists = expressLists(head);
+    int levels = 0;
+    expNode** setOfExpressLists = expressLists(head, &levels);
+    skipList sL = {levels, setOfExpressLists};
+
 
     //Print values in express lists
     printf("\n\nDisplaying Express Lists:\n");
@@ -65,7 +77,11 @@ int main(){
         index++;
     }
 
+    printf("\nWhat number are you trying to find?");
+    int n;
+    scanf("%d", &n);
 
+    search(setOfExpressLists, sL.levels, n);
 
 
     printf("\n");
@@ -107,7 +123,7 @@ node* initializeLocalList(int* arr, int* len){
     return head;
 }
 
-expNode** expressLists(node* head){
+expNode** expressLists(node* head, int* levelsToUpdate){
     //Indicates number of expressLists/levels
     int levels = 0;
     expNode** expLists = malloc(sizeof(expNode*) * levels);
@@ -122,7 +138,6 @@ expNode** expressLists(node* head){
             if (currHeight > levels){
                 levels++;
                 expLists = realloc(expLists, sizeof(expNode*) * levels);
-
 
                 expLists[currHeight-1] = malloc(sizeof(expNode));
                 expNode* expHead = expLists[currHeight-1];
@@ -175,11 +190,76 @@ expNode** expressLists(node* head){
     expLists = realloc(expLists, sizeof(expNode*) * (levels+1));
     expLists[levels] = NULL;
 
+    //Update levels
+    *levelsToUpdate = levels;
+
     return expLists;
 }
 
 int coinFlip(){
     return (rand() % 2);
+}
+
+void insert(expNode** expLists, int n){
+    //To be implemented
+    return;
+}
+
+void search(expNode** expLists, int levels, int n){
+
+    //Start at top list
+    int levelsIndex = levels-1;
+    expNode* head = expLists[levelsIndex];
+    expNode* nextHead = head;
+    expNode* prev = NULL;
+
+    for(int i=levelsIndex; i>=0; i--){
+        //Head for current express list
+        head = nextHead;
+        if (head == NULL) break;
+
+        //We are going to implement it in the future so it doenst just verify n exists and rather gives more useful info
+        if (n == head->value) {
+            printf("%d exists!", n);
+            return;
+        }
+
+        else if (n < head->value){
+            continue;
+        }
+        else if (n > head->value){
+            while(head->next != NULL && n > head->value){
+                prev = head;
+                head = head->next;
+            }
+
+            if (i == 0){
+                node* localHead = (prev != NULL) ? prev->localListNode : head->localListNode;
+                while(localHead != NULL && localHead->value < n){
+                    localHead = localHead->next;
+                }
+                if (localHead == NULL || localHead->value > n){
+                    printf("%d doesnt exist", n);
+                    return;
+                }
+                if (localHead->value == n) {
+                    printf("%d exists!", n);
+                    return;
+                }
+            }
+
+            nextHead = (prev != NULL) ? prev->below : head->below;
+            continue;
+        }
+    }
+
+    printf("%d doesnt exist", n);
+    return;
+}
+
+void delete(expNode** expLists, int n){
+    //To be implemented
+    return;
 }
 
 //Mergesort functions:
