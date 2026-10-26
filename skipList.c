@@ -3,11 +3,13 @@
 #include <time.h>
 #include <stdbool.h>
 
+//Node struct
 typedef struct node{
     int value;
     struct node* next;
 }node;
 
+//Express node struct
 typedef struct expressNode{
     int level;
     int value;
@@ -19,6 +21,8 @@ typedef struct expressNode{
     struct node* localListNode;
 }expNode;
 
+
+//Function declarations:
 int* inputArr(int* len);
 void merge(int arr[], int left, int mid, int right);
 void mergeSort(int arr[], int left, int right);
@@ -27,21 +31,29 @@ expNode** expressLists(node* head);
 int coinFlip();
 
 int main(){
+    //Seed random for coinflip function
     srand(time(NULL));
+
+    //Get input array from user then created linked list out of it for local list
     int len;
     int* arr = inputArr(&len);
+    free(arr); //
     node* head = initializeLocalList(arr, &len);
     node* temp = head;
 
-    printf("Current values in list: \n");
+    //Printing current values in list (sorted) after user inputs
+    printf("\nCurrent values in list: \n");
     while(head != NULL){
         printf("%d ", head->value);
         head = head->next;
     }
     head = temp;
 
-    printf("\n\nDisplaying Express Lists:\n\n");
+    //Create express lists
     expNode** setOfExpressLists = expressLists(head);
+
+    //Print values in express lists
+    printf("\n\nDisplaying Express Lists:\n");
     int index = 0;
     while(setOfExpressLists[index] != NULL){
         expNode* head = setOfExpressLists[index];
@@ -54,8 +66,8 @@ int main(){
     }
 
 
-    free(arr);
-    //free memory for future functions/operations
+
+
     printf("\n");
     return 0;
 }
@@ -96,17 +108,17 @@ node* initializeLocalList(int* arr, int* len){
 }
 
 expNode** expressLists(node* head){
-    //indicates number of expressLists/levels
+    //Indicates number of expressLists/levels
     int levels = 0;
     expNode** expLists = malloc(sizeof(expNode*) * levels);
 
-    //for each value in localList flipcoin to build height (how many levels of expressLists)
+    //For each value in localList flipcoin to build height (how many levels of expressLists)
     while(head != NULL){
         int currHeight = 0;
         expNode* tempBelow = NULL;
         while(coinFlip()){
             currHeight++;
-            //If no expList current exists for this level
+            //If no expList exists for this level
             if (currHeight > levels){
                 levels++;
                 expLists = realloc(expLists, sizeof(expNode*) * levels);
