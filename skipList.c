@@ -24,7 +24,8 @@ typedef struct expressNode{
 //Skip list struct
 typedef struct skipList{
     int levels;
-    expNode** heads;
+    expNode** expressLists;
+    node* localList;
 } skipList;
 
 
@@ -34,7 +35,7 @@ void merge(int arr[], int left, int mid, int right);
 void mergeSort(int arr[], int left, int right);
 node* initializeLocalList(int* arr, int* len);
 expNode** expressLists(node* head, int* levels);
-void search(expNode** expLists, int levels, int n);
+void search(skipList sL, int n);
 void insert(expNode** expLists, int n);
 void delete(expNode** expLists, int n);
 int coinFlip();
@@ -46,22 +47,21 @@ int main(){
     //Get input array from user then created linked list out of it for local list
     int len;
     int* arr = inputArr(&len);
-    free(arr); //
-    node* head = initializeLocalList(arr, &len);
-    node* temp = head;
+    node* localListHead = initializeLocalList(arr, &len);
+    node* temp = localListHead;
 
     //Printing current values in list (sorted) after user inputs
     printf("\nCurrent values in list: \n");
-    while(head != NULL){
-        printf("%d ", head->value);
-        head = head->next;
+    while(localListHead != NULL){
+        printf("%d ", localListHead->value);
+        localListHead = localListHead->next;
     }
-    head = temp;
+    localListHead = temp;
 
     //Create express lists
     int levels = 0;
-    expNode** setOfExpressLists = expressLists(head, &levels);
-    skipList sL = {levels, setOfExpressLists};
+    expNode** setOfExpressLists = expressLists(localListHead, &levels);
+    skipList sL = {levels, setOfExpressLists, localListHead};
 
 
     //Print values in express lists
@@ -76,14 +76,26 @@ int main(){
         }
         index++;
     }
+    
+    char cont;
+    printf("\n\nDo you want to search? (y/n)\n");
+    getchar();
+    scanf("%c", &cont);
+    while(cont == 'y' || cont == 'Y'){
+        printf("\nWhat number are you trying to find?\n");
+        int n;
+        getchar();
+        scanf("%d", &n);
 
-    printf("\nWhat number are you trying to find?");
-    int n;
-    scanf("%d", &n);
+        search(sL, n);
 
-    search(setOfExpressLists, sL.levels, n);
+        printf("\n\nDo you want to search? (y/n)\n");
+        getchar();
+        scanf("%c", &cont);
+    }
 
-
+    free(arr);
+    //free(setOfExpressLists); --- need to loop amongst pointers and free each one
     printf("\n");
     return 0;
 }
@@ -205,51 +217,128 @@ void insert(expNode** expLists, int n){
     return;
 }
 
-void search(expNode** expLists, int levels, int n){
+void search(skipList sL, int n){
+    //If there are no express lists:
+        if (sL.levels == 0){
+            node* curr = sL.localList;
+
+            while(curr != NULL && curr->value <= n){
+                if(curr->value == n){
+                    printf("%d exists!", n);
+                    return;
+                }
+
+                curr = curr->next;
+            }
+
+            printf("%d does not exist!", n);
+            return;
+        }
 
     //Start at top list
-    int levelsIndex = levels-1;
-    expNode* head = expLists[levelsIndex];
-    expNode* nextHead = head;
+    expNode* currNode = sL.expressLists[sL.levels - 1];
+    expNode* nextNode = currNode;
     expNode* prev = NULL;
 
-    for(int i=levelsIndex; i>=0; i--){
-        //Head for current express list
-        head = nextHead;
-        if (head == NULL) break;
+    for(int i=sL.levels-1; i>=0; i--){
 
-        //We are going to implement it in the future so it doenst just verify n exists and rather gives more useful info
-        if (n == head->value) {
+        //Start at head for current express list
+        currNode = nextNode;
+        if(currNode == NULL) break;
+        prev = NULL;  // Reset prev for this level
+
+        //3 Cases: 1. n = node_val 2. n < node_val 3. n > node_val
+
+        //Case 1:
+        if (n == currNode->value){
             printf("%d exists!", n);
             return;
         }
 
-        else if (n < head->value){
-            continue;
+        //Case 2:
+        else if(n < currNode->value){
+            //If we are at the first level & at head of first express level, we just search the local list from its head to first node with val>=n
+            if (i == 0 && prev == NULL){
+                node* localListHead = sL.localList;
+                do{
+                    if (localListHead->value == n){
+                        printf("%d exists!", n);
+                        return;
+                    }
+                    localListHead = localListHead->next;
+                } while(localListHead != NULL && localListHead->value <= n);
+
+                printf("%d does not exist!", n);
+                return;
+            }
+            //If we are at the first level, but not head of first express level
+            else if (i==0){
+                node* localListHead = prev->localListNode;
+                while(localListHead != NULL && localListHead->value <= n){
+                    if (localListHead->value == n){
+                        printf("%d exists!", n);
+                        return;
+                    }
+                    localListHead = localListHead->next;
+                }
+
+                printf("%d does not exist!", n);
+                return;
+            }
+            //For all other levels
+            else{
+                //If we are at head of current express list, we start from head of next express list
+                if (prev == NULL){
+                    nextNode = sL.expressLists[i-1];
+                    continue;
+                }
+                else{
+                    nextNode = prev->below;
+                    continue;
+                }
+            }
         }
-        else if (n > head->value){
-            while(head->next != NULL && n > head->value){
-                prev = head;
-                head = head->next;
+
+        //Case 3:
+        else if(n > currNode->value){
+            //If we are at level 1:
+            if (i == 0){
+                while(currNode != NULL && n >= currNode->value){
+                    if (n == currNode->value){
+                        printf("%d exists!", n);
+                        return;
+                    }
+                    prev = currNode;
+                    currNode = currNode->next;
+                }
+                //Now traverse local list
+                node* localListNode = prev->localListNode;
+                while(localListNode != NULL && n >= localListNode->value){
+                    if(n == localListNode->value){
+                        printf("%d exists!", n);
+                        return;
+                    }
+
+                    localListNode = localListNode->next;
+                }
+                printf("%d does not exist!", n);
+                return;
             }
 
-            if (i == 0){
-                node* localHead = (prev != NULL) ? prev->localListNode : head->localListNode;
-                while(localHead != NULL && localHead->value < n){
-                    localHead = localHead->next;
+            //For all other levels:
+            else{
+                while(currNode->next != NULL && currNode->next->value <= n){
+                    prev = currNode;
+                    currNode = currNode->next;
                 }
-                if (localHead == NULL || localHead->value > n){
-                    printf("%d doesnt exist", n);
-                    return;
-                }
-                if (localHead->value == n) {
+                if (currNode->value == n){
                     printf("%d exists!", n);
                     return;
                 }
-            }
 
-            nextHead = (prev != NULL) ? prev->below : head->below;
-            continue;
+                nextNode = currNode->below;
+                continue;
+            }
         }
     }
 
